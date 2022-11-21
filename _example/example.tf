@@ -1,5 +1,5 @@
 provider "google" {
-  project = "manifest-device-369014"
+  project = "xxxxxxxx"
   region  = "us-central1"
   zone    = "us-central1-c"
 
