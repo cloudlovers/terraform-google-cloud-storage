@@ -21,44 +21,67 @@ resource "google_storage_bucket" "main" {
   requester_pays              = var.requester_pays
 
   labels = module.labels.tags
-  dynamic "website" {
-    for_each = var.website != null ? [var.website] : []
-    content {
-      main_page_suffix = lookup(website.value, "main_page_suffix", "index.html")
-      not_found_page   = lookup(website.value, "not_found_page", "404.html")
-    }
-  }
 
-  dynamic "cors" {
-    for_each = var.cors != null ? [var.cors] : []
+  dynamic "encryption" {
+    for_each = var.default_kms_key_name != null ? ["encryption"] : []
     content {
-      origin          = lookup(cors.value, "origin", null)
-      method          = lookup(cors.value, "method", ["GET", "HEAD", "PUT", "POST", "DELETE"])
-      response_header = lookup(cors.value, "response_header", ["*"])
-      max_age_seconds = 3600
+      default_kms_key_name = var.default_kms_key_name
     }
   }
 
   dynamic "logging" {
-    for_each = var.logging != null ? [var.logging] : []
+    for_each = var.logging != null ? ["logging"] : []
+
     content {
-      log_bucket = lookup(logging.value, "log_bucket", "")
-      log_object_prefix = lookup(logging.value, "log_object_prefix", null)
+      log_bucket        = var.logging.log_bucket
+      log_object_prefix = var.logging.log_object_prefix
     }
   }
 
-  lifecycle_rule {
-    condition {
-      age = 3
+  dynamic "retention_policy" {
+    for_each = var.retention_policy != null ? ["retention_policy"] : []
+
+    content {
+      retention_period = var.retention_policy.retention_period
+      is_locked        = try(var.retention_policy.is_locked, null)
     }
-    action {
-      type = "Delete"
+  }
+
+  dynamic "cors" {
+    for_each = var.cors
+
+    content {
+      origin          = try(cors.value.origin, null)
+      method          = try(cors.value.method, null)
+      response_header = try(cors.value.response_header, null)
+      max_age_seconds = try(cors.value.max_age_seconds, null)
     }
   }
 
   versioning {
-    enabled = true
+    enabled = var.versioning
   }
 
+  dynamic "lifecycle_rule" {
+    for_each = var.lifecycle_rules
+
+    content {
+      action {
+        storage_class = lifecycle_rule.value.action.type == "SetStorageClass" ? lifecycle_rule.value.action.storage_class : null
+        type          = lifecycle_rule.value.action.type
+      }
+      condition {
+        age                        = try(lifecycle_rule.value.condition.age, null)
+        created_before             = try(lifecycle_rule.value.condition.created_before, null)
+        noncurrent_time_before     = try(lifecycle_rule.value.condition.noncurrent_time_before, null)
+        matches_storage_class      = try(lifecycle_rule.value.condition.matches_storage_class, null)
+        num_newer_versions         = try(lifecycle_rule.value.condition.num_newer_versions, null)
+        custom_time_before         = try(lifecycle_rule.value.condition.custom_time_before, null)
+        days_since_custom_time     = try(lifecycle_rule.value.condition.days_since_custom_time, null)
+        with_state                 = try(lifecycle_rule.value.condition.with_state, null)
+        days_since_noncurrent_time = try(lifecycle_rule.value.condition.days_since_noncurrent_time, null)
+      }
+    }
+  }
 
 }

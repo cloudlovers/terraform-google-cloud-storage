@@ -78,6 +78,12 @@ variable "requester_pays" {
   description = "Enables Requester Pays on a storage bucket"
 }
 
+variable "default_kms_key_name" {
+    type        = string
+    default     = null
+    description = "The bucket's encryption configuration"
+}
+
 variable "website" {
   type        = map(any)
   default     = null
@@ -85,13 +91,32 @@ variable "website" {
 }
 
 variable "cors" {
-  type        = map(any)
-  default     = null
+  type        = any
+  default     = []
   description = "The bucket's Cross-Origin Resource Sharing (CORS) configuration. Multiple blocks of this type are permitted."
 }
 
 variable "logging" {
-  type        = map(any)
+  type        = any
   default     = null
   description = "The bucket's Access & Storage Logs configuration."
+}
+
+variable "retention_policy" {
+  type        = any
+  default     = null
+  description = "Configuration of the bucket's data retention policy for how long objects in the bucket should be retained."
+}
+
+variable "versioning" {
+  type = bool
+  default = true
+  description = "The bucket's Versioning configuration."
+}
+
+variable "lifecycle_rules" {
+  type        = any
+  default     = []
+  description = "The bucket's Lifecycle Rules configuration."
+
 }
